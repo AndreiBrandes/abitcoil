@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time NASDAQ market status indicator. Check if the market is open, closed, or in pre/after-hours trading.">
+    <meta name="keywords" content="NASDAQ, market status, stock market, trading hours, pre-market, after-hours">
+    <meta property="og:title" content="Open or Not? - NASDAQ Market Status">
+    <meta property="og:description" content="Real-time NASDAQ market status indicator">
+    <meta property="og:type" content="website">
+    <title>Open or Not? - NASDAQ Market Status</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2300D084'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green: #00D084;
+            --yellow: #FFD60A;
+            --orange: #FF9F0A;
+            --red: #FF3B30;
+            --bg-dark: #1C1C1E;
+            --bg-card: #2C2C2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #98989D;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1C1C1E 0%, #2C2C2E 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background circles */
+        .bg-circle {
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.03;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-circle-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--green);
+            top: -200px;
+            right: -200px;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-circle-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--yellow);
+            bottom: -150px;
+            left: -150px;
+            animation: float 15s infinite ease-in-out reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            display: inline-block;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--green), var(--yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .exchange-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 10px 15px;
+            box-shadow: 0 10px 30px var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .exchange-selector:hover {
+            border-color: var(--green);
+            box-shadow: 0 10px 40px rgba(0, 208, 132, 0.3);
+        }
+
+        .exchange-selector label {
+            display: none;
+        }
+
+        .exchange-selector select {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            font-weight: 500;
+        }
+
+        .exchange-selector select:hover {
+            color: var(--green);
+        }
+
+        .exchange-selector select:focus {
+            color: var(--green);
+        }
+
+        .exchange-selector select option {
+            background: var(--bg-dark);
+            padding: 10px;
+            color: var(--text-primary);
+        }
+
+        .exchange-flag {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .exchange-name {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .local-time-display {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .status-card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px var(--shadow);
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 70px var(--shadow);
+        }
+
+        .status-indicator {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            box-shadow: 0 10px 30px var(--shadow);
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .status-indicator::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            filter: blur(20px);
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        .status-indicator.blink {
+            animation: blink 4.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 88% { opacity: 1; }
+            89%, 91% { opacity: 0.3; }
+            92%, 100% { opacity: 1; }
+        }
+
+        .status-indicator.market-open { background: var(--green); }
+        .status-indicator.pre-market { background: var(--yellow); }
+        .status-indicator.after-market { background: var(--orange); }
+        .status-indicator.market-closed { background: var(--red); }
+
+        .status-text {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .status-detail {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .countdown {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: inline-block;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .info-card h3 {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .info-card p {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .schedule {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .schedule h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .schedule-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .schedule-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .schedule-time {
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 40px;
+        }
+
+        footer a {
+            color: var(--green);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: var(--yellow);
+        }
+
+        .et-time {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .status-card {
+                padding: 40px 20px;
+            }
+
+            .status-indicator {
+                width: 100px;
+                height: 100px;
+                font-size: 3rem;
+            }
+
+            .status-text {
+                font-size: 1.5rem;
+            }
+
+            .schedule {
+                padding: 20px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .exchange-selector {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+            }
+
+            .exchange-selector select {
+                font-size: 0.9rem;
+                padding: 3px 5px;
+            }
+        }
+
+        /* Holiday banner */
+        .holiday-banner {
+            background: linear-gradient(135deg, #FF3B30, #FF9F0A);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3);
+        }
+
+        .next-holiday {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .next-holiday-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .next-holiday-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .next-holiday-date {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* News Feed Section */
+        .news-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px var(--shadow);
+            margin: 40px 0;
+        }
+
+        .news-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .news-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .news-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--green);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .news-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-left-color: var(--yellow);
+            transform: translateX(5px);
+        }
+
+        .news-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .news-item h3 a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .news-item h3 a:hover {
+            color: var(--green);
+        }
+
+        .news-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .news-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .news-loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .news-loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .news-source {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0, 208, 132, 0.1);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .news-status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .news-status-badge.live {
+            background: rgba(0, 208, 132, 0.2);
+            color: var(--green);
+            animation: pulse-badge 2s infinite;
+        }
+
+        .news-status-badge.cached {
+            background: rgba(255, 159, 10, 0.2);
+            color: var(--orange);
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Market Indices Section */
+        .indices-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: none; /* Hidden by default, shown when data loads */
+        }
+
+        .indices-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .index-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            padding: 8px 10px;
+            border-left: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .index-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .index-card.positive {
+            border-left-color: var(--green);
+        }
+
+        .index-card.negative {
+            border-left-color: var(--red);
+        }
+
+        .index-name {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+
+        .index-price {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .index-change {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+
+        .index-change.positive {
+            color: var(--green);
+        }
+
+        .index-change.negative {
+            color: var(--red);
+        }
+
+        .index-percent {
+            font-size: 0.7rem;
+        }
+
+        .indices-update {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.6rem;
+            margin-top: 8px;
+            opacity: 0.5;
+        }
+
+        /* App download section */
+        .app-download-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px var(--shadow);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .app-download-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .app-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .app-badge {
+            height: 60px;
+            width: auto;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .app-badge:hover {
+            transform: translateY(-3px);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            .app-badge {
+                height: 50px;
+            }
+
+            .app-badges {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circle bg-circle-1"></div>
+    <div class="bg-circle bg-circle-2"></div>
+
+    <div class="container">
+        <header>
+            <h1 class="logo">Open or Not?</h1>
+            <p class="tagline">Global Stock Market Status</p>
+        </header>
+
+        <div class="exchange-selector">
+            <label for="exchange-select">Choose Market:</label>
+            <select id="exchange-select" onchange="changeExchange()">
+                <option value="nasdaq">🇺🇸 NASDAQ (USA)</option>
+                <option value="nyse">🇺🇸 NYSE (USA)</option>
+                <option value="lse">🇬🇧 LSE (London)</option>
+                <option value="euronext">🇪🇺 Euronext (Europe)</option>
+                <option value="tsx">🇨🇦 TSX (Toronto)</option>
+                <option value="tse">🇯🇵 TSE (Tokyo)</option>
+                <option value="sse">🇨🇳 SSE (Shanghai)</option>
+                <option value="hkex">🇭🇰 HKEX (Hong Kong)</option>
+                <option value="asx">🇦🇺 ASX (Sydney)</option>
+                <option value="bse">🇮🇳 BSE (Mumbai)</option>
+            </select>
+
+            <!-- Market Indices inside dropdown -->
+            <div class="indices-section" id="indices-section">
+                <div id="indices-grid" class="indices-grid">
+                    <!-- Dynamically populated -->
+                </div>
+                <div class="indices-update" id="indices-update">Updating...</div>
+            </div>
+        </div>
+
+        <div id="holiday-banner" class="holiday-banner" style="display: none;"></div>
+
+        <div class="status-card">
+            <div class="exchange-flag" id="exchange-flag">🇺🇸</div>
+            <div class="exchange-name" id="exchange-name">NASDAQ</div>
+            <div id="status-indicator" class="status-indicator">
+                <span id="status-emoji">🔴</span>
+            </div>
+            <h2 class="status-text" id="status-text">Market Closed</h2>
+            <p class="status-detail" id="status-detail">Weekend</p>
+            <div class="countdown" id="countdown">Calculating...</div>
+            <div class="local-time-display">
+                <div>Local Time: <strong><span id="local-market-time">--:-- --</span></strong></div>
+                <div style="margin-top: 5px; font-size: 0.9rem;">Your Time: <span id="your-time">--:-- --</span></div>
+            </div>
+        </div>
+
+
+        <div class="schedule">
+            <h2>📅 Today's Schedule</h2>
+            <div class="schedule-item">
+                <div class="schedule-label">
+                    <div class="schedule-dot" style="background: var(--yellow);"></div>
+                    <span>Pre-Market</span>
+                </div>
+                <span class="schedule-time">4:00 AM - 9:30 AM ET</span>
+            </div>
+            <div class="schedule-item">
+                <div class="schedule-label">
+                    <div class="schedule-dot" style="background: var(--green);"></div>
+                    <span>Market Open</span>
+                </div>
+                <span class="schedule-time" id="market-hours">9:30 AM - 4:00 PM ET</span>
+            </div>
+            <div class="schedule-item">
+                <div class="schedule-label">
+                    <div class="schedule-dot" style="background: var(--orange);"></div>
+                    <span>After-Hours</span>
+                </div>
+                <span class="schedule-time">4:00 PM - 8:00 PM ET</span>
+            </div>
+
+            <div id="next-holiday" class="next-holiday" style="display: none;">
+                <div class="next-holiday-label">Next Market Holiday</div>
+                <div class="next-holiday-name" id="next-holiday-name"></div>
+                <div class="next-holiday-date" id="next-holiday-date"></div>
+            </div>
+        </div>
+
+        <div class="app-download-section">
+            <h2 style="text-align: center; margin-bottom: 20px;">Get the Native Apps</h2>
+            <div class="app-badges">
+                <a href="https://apps.apple.com/il/app/nasdaq-status/id6754249347?mt=12" target="_blank" rel="noopener">
+                    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/black/en-us?size=250x83&amp;releaseDate=1729468800" alt="Download on the Mac App Store" class="app-badge">
+                </a>
+                <a href="https://apps.apple.com/il/app/nasdaq-widget/id6754284523" target="_blank" rel="noopener">
+                    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1729468800" alt="Download on the App Store" class="app-badge">
+                </a>
+            </div>
+            <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: 15px;">
+                🖥️ Menu bar app for Mac • 📱 Home screen widgets for iPhone & iPad
+            </p>
+        </div>
+
+        <!-- News Section -->
+        <div class="news-section">
+            <h2>📰 Latest Market News <span class="news-source">Yahoo Finance</span><span id="news-status-badge" class="news-status-badge live" style="display: none;"></span></h2>
+            <div id="news-feed" class="news-grid">
+                <div class="news-loading">Loading latest market news</div>
+            </div>
+        </div>
+
+        <footer>
+            <p>All times shown in Eastern Time (ET) • Updates every minute</p>
+            <p style="margin-top: 10px;">
+                <a href="privacy.html">Privacy Policy</a>
+            </p>
+            <p style="margin-top: 20px; opacity: 0.5;">
+                Not affiliated with NASDAQ or any financial institution • For informational purposes only
+            </p>
+        </footer>
+    </div>
+
+    <script src="market-status-global.js"></script>
+    <script>
+        // Market Indices with Finnhub API
+        // Free API: 60 calls/minute, no credit card required
+        // Sign up at: https://finnhub.io/register
+
+        const FINNHUB_API_KEY = 'ctdina1r01qpafnv7t10ctdina1r01qpafnv7t1g'; // Free public demo key
+
+        // Map exchanges to their major indices (Yahoo Finance format)
+        const exchangeIndices = {
+            nasdaq: [
+                { symbol: '^NDX', name: 'NASDAQ 100' },
+                { symbol: '^IXIC', name: 'NASDAQ Composite' },
+                { symbol: '^DJI', name: 'Dow Jones' },
+                { symbol: '^GSPC', name: 'S&P 500' }
+            ],
+            nyse: [
+                { symbol: '^DJI', name: 'Dow Jones' },
+                { symbol: '^GSPC', name: 'S&P 500' },
+                { symbol: '^IXIC', name: 'NASDAQ Composite' },
+                { symbol: '^RUT', name: 'Russell 2000' }
+            ],
+            lse: [
+                { symbol: '^FTSE', name: 'FTSE 100' },
+                { symbol: '^FTMC', name: 'FTSE 250' }
+            ],
+            euronext: [
+                { symbol: '^FCHI', name: 'CAC 40' },
+                { symbol: '^GDAXI', name: 'DAX' },
+                { symbol: '^AEX', name: 'AEX' }
+            ],
+            tsx: [
+                { symbol: '^GSPTSE', name: 'S&P/TSX Composite' }
+            ],
+            tse: [
+                { symbol: '^N225', name: 'Nikkei 225' },
+                { symbol: '^TOPX', name: 'TOPIX' }
+            ],
+            sse: [
+                { symbol: '000001.SS', name: 'SSE Composite' },
+                { symbol: '399001.SZ', name: 'SZSE Component' }
+            ],
+            hkex: [
+                { symbol: '^HSI', name: 'Hang Seng' },
+                { symbol: '^HSCE', name: 'Hang Seng China' }
+            ],
+            asx: [
+                { symbol: '^AXJO', name: 'ASX 200' },
+                { symbol: '^AORD', name: 'All Ordinaries' }
+            ],
+            bse: [
+                { symbol: '^BSESN', name: 'BSE SENSEX' },
+                { symbol: '^NSEI', name: 'NIFTY 50' }
+            ]
+        };
+
+        async function loadMarketIndices(exchange) {
+            const indices = exchangeIndices[exchange];
+            if (!indices || indices.length === 0) {
+                document.getElementById('indices-section').style.display = 'none';
+                showApiStatus(false);
+                return;
+            }
+
+            try {
+                const indicesData = await Promise.all(
+                    indices.map(index => fetchIndexData(index.symbol, index.name))
+                );
+
+                // Filter out failed requests
+                const validData = indicesData.filter(data => data !== null);
+
+                if (validData.length > 0) {
+                    displayIndices(validData);
+                    document.getElementById('indices-section').style.display = 'block';
+                    showApiStatus(true);
+                } else {
+                    // API failed, hide section
+                    document.getElementById('indices-section').style.display = 'none';
+                    showApiStatus(false);
+                }
+            } catch (error) {
+                console.error('Error loading indices:', error);
+                // Hide section on error
+                document.getElementById('indices-section').style.display = 'none';
+                showApiStatus(false);
+            }
+        }
+
+        function showApiStatus(isAvailable) {
+            let statusEl = document.getElementById('api-status');
+            if (!statusEl) {
+                statusEl = document.createElement('div');
+                statusEl.id = 'api-status';
+                statusEl.style.cssText = `
+                    text-align: center;
+                    padding: 10px;
+                    font-size: 0.85rem;
+                    color: var(--text-secondary);
+                    opacity: 0.6;
+                `;
+                document.querySelector('.container').appendChild(statusEl);
+            }
+
+            if (!isAvailable) {
+                statusEl.textContent = 'Market indices API unavailable';
+                statusEl.style.display = 'block';
+            } else {
+                statusEl.style.display = 'none';
+            }
+        }
+
+        async function fetchIndexData(symbol, name) {
+            try {
+                // Use CORS proxy to access Yahoo Finance
+                const yahooSymbol = symbol.replace('^', '%5E');
+                const apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+
+                console.log(`Fetching ${name} (${symbol})...`);
+
+                const response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error(`HTTP ${response.status} for ${symbol}`);
+                    return null;
+                }
+
+                const data = await response.json();
+
+                // Extract data from Yahoo Finance response
+                if (data.chart && data.chart.result && data.chart.result[0]) {
+                    const result = data.chart.result[0];
+                    const meta = result.meta;
+
+                    if (meta.regularMarketPrice) {
+                        const currentPrice = meta.regularMarketPrice;
+                        const previousClose = meta.chartPreviousClose || meta.previousClose;
+                        const change = currentPrice - previousClose;
+                        const changePercent = (change / previousClose) * 100;
+
+                        console.log(`✓ ${name}: $${currentPrice.toFixed(2)}`);
+
+                        return {
+                            name: name,
+                            price: currentPrice,
+                            change: change,
+                            changePercent: changePercent,
+                            previousClose: previousClose
+                        };
+                    }
+                }
+
+                console.warn(`No valid data for ${symbol}`);
+                return null;
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error.message);
+                return null;
+            }
+        }
+
+        function displayIndices(indicesData) {
+            const container = document.getElementById('indices-grid');
+            const updateElement = document.getElementById('indices-update');
+
+            container.innerHTML = indicesData.map(index => {
+                const isPositive = index.change >= 0;
+                const changeClass = isPositive ? 'positive' : 'negative';
+                const changeIcon = isPositive ? '▲' : '▼';
+
+                return `
+                    <div class="index-card ${changeClass}">
+                        <div class="index-name">${index.name}</div>
+                        <div class="index-price">${formatPrice(index.price)}</div>
+                        <div class="index-change ${changeClass}">
+                            <span>${changeIcon} ${formatChange(index.change)}</span>
+                            <span class="index-percent">(${formatPercent(index.changePercent)}%)</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update timestamp
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            updateElement.textContent = `Last updated: ${timeString}`;
+        }
+
+        function formatPrice(price) {
+            if (price >= 1000) {
+                return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            return price.toFixed(2);
+        }
+
+        function formatChange(change) {
+            return Math.abs(change).toFixed(2);
+        }
+
+        function formatPercent(percent) {
+            return (percent >= 0 ? '+' : '') + percent.toFixed(2);
+        }
+
+        // Load indices when page loads and when exchange changes
+        function updateIndicesForExchange() {
+            const exchange = document.getElementById('exchange-select').value;
+            loadMarketIndices(exchange);
+        }
+
+        // Initial load
+        setTimeout(() => {
+            updateIndicesForExchange();
+        }, 1000);
+
+        // Update every 15 seconds (well within API limits)
+        setInterval(updateIndicesForExchange, 15000);
+
+        // Also update when exchange changes
+        const originalChangeExchange = window.changeExchange;
+        window.changeExchange = function() {
+            originalChangeExchange();
+            updateIndicesForExchange();
+        };
+    </script>
+    <script>
+        // Yahoo Finance News Feed
+        async function loadNewsFeed() {
+            try {
+                // Try multiple RSS feed sources for reliability
+                const feeds = [
+                    {
+                        url: 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ffeeds.finance.yahoo.com%2Frss%2F2.0%2Fheadline%3Fs%3D%5EIXIC%26region%3DUS%26lang%3Den-US',
+                        name: 'rss2json'
+                    },
+                    {
+                        url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://feeds.finance.yahoo.com/rss/2.0/headline?s=^IXIC&region=US&lang=en-US'),
+                        name: 'allorigins'
+                    }
+                ];
+
+                let success = false;
+
+                // Try rss2json first
+                try {
+                    const response = await fetch(feeds[0].url);
+                    const data = await response.json();
+
+                    if (data.status === 'ok' && data.items && data.items.length > 0) {
+                        displayNews(data.items.slice(0, 6), true);
+                        success = true;
+                        return;
+                    }
+                } catch (e) {
+                    console.log('rss2json failed, trying backup...');
+                }
+
+                // Try allorigins as backup
+                if (!success) {
+                    const response = await fetch(feeds[1].url);
+                    const data = await response.json();
+
+                    if (data.contents) {
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(data.contents, 'text/xml');
+                        const items = parseRSSFeed(xmlDoc);
+
+                        if (items.length > 0) {
+                            displayNews(items.slice(0, 6), true);
+                            success = true;
+                            return;
+                        }
+                    }
+                }
+
+                if (!success) {
+                    // Show mock data as fallback
+                    showMockNews();
+                }
+            } catch (error) {
+                console.error('Error loading news:', error);
+                showMockNews();
+            }
+        }
+
+        function parseRSSFeed(xmlDoc) {
+            const items = [];
+            const itemElements = xmlDoc.querySelectorAll('item');
+
+            itemElements.forEach(item => {
+                const title = item.querySelector('title')?.textContent || '';
+                const link = item.querySelector('link')?.textContent || '';
+                const description = item.querySelector('description')?.textContent || '';
+                const pubDate = item.querySelector('pubDate')?.textContent || '';
+
+                if (title && link) {
+                    items.push({
+                        title,
+                        link,
+                        description,
+                        pubDate
+                    });
+                }
+            });
+
+            return items;
+        }
+
+        function showMockNews() {
+            // Fallback to curated mock news if RSS fails
+            const mockNews = [
+                {
+                    title: "NASDAQ Composite Index - Live Updates",
+                    description: "Stay updated with real-time market status and trading hours for global stock exchanges.",
+                    link: "https://finance.yahoo.com/quote/%5EIXIC",
+                    pubDate: new Date().toISOString(),
+                    author: "Market Data"
+                },
+                {
+                    title: "Global Stock Markets Trading Hours Guide",
+                    description: "Complete guide to international stock exchange hours including NASDAQ, NYSE, LSE, and more.",
+                    link: "https://finance.yahoo.com/",
+                    pubDate: new Date(Date.now() - 3600000).toISOString(),
+                    author: "Finance Guide"
+                },
+                {
+                    title: "Pre-Market and After-Hours Trading Explained",
+                    description: "Learn about extended trading hours and how they impact your investment strategy.",
+                    link: "https://finance.yahoo.com/",
+                    pubDate: new Date(Date.now() - 7200000).toISOString(),
+                    author: "Trading Basics"
+                },
+                {
+                    title: "Stock Market Holidays 2025 Calendar",
+                    description: "View upcoming market closures and holiday schedules for major stock exchanges worldwide.",
+                    link: "https://finance.yahoo.com/",
+                    pubDate: new Date(Date.now() - 10800000).toISOString(),
+                    author: "Calendar"
+                },
+                {
+                    title: "Understanding Different Stock Exchanges",
+                    description: "Compare NASDAQ, NYSE, LSE, TSE, and other major global stock exchanges.",
+                    link: "https://finance.yahoo.com/",
+                    pubDate: new Date(Date.now() - 14400000).toISOString(),
+                    author: "Education"
+                },
+                {
+                    title: "Real-Time Market Status Indicators",
+                    description: "Monitor live market conditions with color-coded status indicators for quick decision making.",
+                    link: window.location.href,
+                    pubDate: new Date(Date.now() - 18000000).toISOString(),
+                    author: "Open or Not"
+                }
+            ];
+
+            displayNews(mockNews, false); // false = not live
+        }
+
+        function displayNews(items, isLive = true) {
+            const newsContainer = document.getElementById('news-feed');
+            const statusBadge = document.getElementById('news-status-badge');
+
+            // Update status badge
+            if (statusBadge) {
+                statusBadge.style.display = 'inline-block';
+                if (isLive) {
+                    statusBadge.className = 'news-status-badge live';
+                    statusBadge.textContent = '⚡ Live';
+                } else {
+                    statusBadge.className = 'news-status-badge cached';
+                    statusBadge.textContent = '📋 Curated';
+                }
+            }
+
+            if (!items || items.length === 0) {
+                newsContainer.innerHTML = '<div class="news-loading">No news available</div>';
+                return;
+            }
+
+            newsContainer.innerHTML = items.map(item => {
+                // Parse date
+                const date = new Date(item.pubDate);
+                const timeAgo = getTimeAgo(date);
+
+                // Clean description (remove HTML tags)
+                const description = item.description
+                    ? item.description.replace(/<[^>]*>/g, '').substring(0, 150) + '...'
+                    : '';
+
+                return `
+                    <div class="news-item" onclick="window.open('${item.link}', '_blank')">
+                        <h3><a href="${item.link}" target="_blank" onclick="event.stopPropagation()">${item.title}</a></h3>
+                        ${description ? `<div class="news-description">${description}</div>` : ''}
+                        <div class="news-meta">
+                            <span>⏰ ${timeAgo}</span>
+                            ${item.author ? `<span>✍️ ${item.author}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            const intervals = {
+                year: 31536000,
+                month: 2592000,
+                week: 604800,
+                day: 86400,
+                hour: 3600,
+                minute: 60
+            };
+
+            for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+                const interval = Math.floor(seconds / secondsInUnit);
+                if (interval >= 1) {
+                    return `${interval} ${unit}${interval === 1 ? '' : 's'} ago`;
+                }
+            }
+
+            return 'Just now';
+        }
+
+        // Load news on page load
+        loadNewsFeed();
+
+        // Refresh news every 5 minutes
+        setInterval(loadNewsFeed, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
+
