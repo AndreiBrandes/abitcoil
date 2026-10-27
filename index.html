@@ -255,6 +255,10 @@
             margin-bottom: 40px;
         }
 
+        .app-showcase:last-of-type {
+            margin-bottom: 0;
+        }
+
         .app-preview {
             flex: 1;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
@@ -268,6 +272,10 @@
             font-size: 5rem;
             margin-bottom: 20px;
             animation: blink 4s infinite;
+        }
+
+        .app-preview .status-demo.static {
+            animation: none;
         }
 
         @keyframes blink {
@@ -832,7 +840,7 @@
         <!-- Apps Section -->
         <section class="apps-section">
             <h2>📱 Featured Apps</h2>
-            <p class="subtitle">Real-time NASDAQ market status indicator - Available on Mac, iOS, and Web</p>
+            <p class="subtitle">Web apps hosted here — Open or Not and the Israeli mortgage calculator</p>
 
             <div class="app-showcase">
                 <div class="app-preview">
@@ -840,7 +848,7 @@
                     <h3>Open or Not?</h3>
                     <p>Know NASDAQ market status instantly</p>
                     <a href="/openornot/" class="website-link">
-                        🌐 Visit www.abit.co.il/openornot
+                        Open /openornot
                     </a>
                 </div>
 
@@ -862,6 +870,28 @@
                             <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1729468800" alt="Download on the App Store">
                         </a>
                     </div>
+                </div>
+            </div>
+
+            <div class="app-showcase">
+                <div class="app-preview">
+                    <div class="status-demo static">🏠</div>
+                    <h3>מחשבון משכנתא</h3>
+                    <p>Compare Israeli mortgage offers in the browser</p>
+                    <a href="/mortgage-calc-il/" class="website-link">
+                        Open /mortgage-calc-il
+                    </a>
+                </div>
+
+                <div class="app-info">
+                    <h3>Israeli Mortgage Calculator</h3>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Compare offers across banks</li>
+                        <li><i class="fas fa-check-circle"></i> Mix tracks, rates, and repayment methods</li>
+                        <li><i class="fas fa-check-circle"></i> Full amortization schedule and charts</li>
+                        <li><i class="fas fa-check-circle"></i> Backup and restore via PDF</li>
+                        <li><i class="fas fa-check-circle"></i> Data stays in the browser, nothing is sent to a server</li>
+                    </ul>
                 </div>
             </div>
         </section>
@@ -946,13 +976,28 @@
                     <p class="description">
                         Created cross-platform apps (Mac, iOS, Web) for real-time NASDAQ market status monitoring.
                         Features smart alerts, holiday tracking, and beautiful UI. Published on App Store with
-                        thousands of users.
+                        thousands of users. Web: <a href="/openornot/" style="color: var(--primary);">/openornot</a>
                     </p>
                     <div class="tech-tags">
                         <span class="tech-tag">Swift</span>
                         <span class="tech-tag">SwiftUI</span>
                         <span class="tech-tag">JavaScript</span>
                         <span class="tech-tag">HTML/CSS</span>
+                        <span class="tech-tag">Cloudflare Pages</span>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <h3>Israeli Mortgage Calculator</h3>
+                    <p class="description">
+                        Browser-based calculator for comparing Israeli mortgage offers, tracks, and repayment
+                        methods, with PDF backup. Web:
+                        <a href="/mortgage-calc-il/" style="color: var(--primary);">/mortgage-calc-il</a>
+                    </p>
+                    <div class="tech-tags">
+                        <span class="tech-tag">React</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">Vite</span>
                         <span class="tech-tag">Cloudflare Pages</span>
                     </div>
                 </div>
@@ -1067,11 +1112,15 @@
             },
             projects: {
                 keywords: ['projects', 'portfolio', 'built', 'created', 'apps', 'applications'],
-                response: "Key projects include:\n\n📱 NASDAQ Status Apps - Cross-platform (Mac, iOS, Web) market monitoring apps with thousands of users\n\n☁️ ELK Cluster on Kubernetes - Production-grade logging infrastructure\n\n🔄 CI/CD Pipeline with ArgoCD - Automated GitOps deployments\n\n✅ FastAPI Deployment Checker - Automated version validation system"
+                response: "Key projects include:\n\n📱 NASDAQ Status Apps - Cross-platform (Mac, iOS, Web) at www.abit.co.il/openornot\n\n🏠 Israeli Mortgage Calculator - Compare bank offers at www.abit.co.il/mortgage-calc-il\n\n☁️ ELK Cluster on Kubernetes - Production-grade logging infrastructure\n\n🔄 CI/CD Pipeline with ArgoCD - Automated GitOps deployments\n\n✅ FastAPI Deployment Checker - Automated version validation system"
             },
             nasdaq: {
-                keywords: ['nasdaq', 'market', 'stock', 'trading', 'app'],
-                response: "The NASDAQ Status apps are Andrei's featured projects! They provide real-time market status monitoring with smart alerts, holiday tracking, and beautiful UI. Available on Mac (menu bar), iOS (widgets), and web at www.abit.co.il/openornot. The apps have gained thousands of users and showcase his full-stack development skills."
+                keywords: ['nasdaq', 'market', 'stock', 'trading', 'openornot', 'open or not'],
+                response: "The NASDAQ Status apps are Andrei's featured projects! They provide real-time market status monitoring with smart alerts, holiday tracking, and beautiful UI. Available on Mac (menu bar), iOS (widgets), and web at www.abit.co.il/openornot."
+            },
+            mortgage: {
+                keywords: ['mortgage', 'משכנתא', 'calculator', 'bank', 'loan'],
+                response: "The Israeli mortgage calculator compares bank offers, tracks, and repayment methods in the browser. Nothing is sent to a server. Open it at www.abit.co.il/mortgage-calc-il"
             },
             contact: {
                 keywords: ['contact', 'email', 'reach', 'hire', 'connect', 'linkedin', 'github'],
